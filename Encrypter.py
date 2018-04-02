@@ -1,0 +1,46 @@
+import base64
+import hashlib
+from AESCipher import AESCipher
+from Decrypter import Decrypter
+from PIL import Image
+from random import randint
+class Encrypter:
+	def __init__(self, text, key, splits = None):
+		self.text = text
+		self.key = key
+		print base64.b64encode(key)
+		if splits is None:
+			self.splits = 2
+		else:
+			self.splits = splits
+	def generate_splits(self):
+		aes = AESCipher(self.key)
+		cipher = aes.encrypt(self.text)
+		message = aes.decrypt(cipher)
+		size = 255, len(self.key)
+		im = Image.new("1", size, "white")
+		pix =  im.load()
+		for i in range(len(self.key)):
+			for j in range(ord(self.key[i])):
+				pix[j, i] = 0
+		im.save("original.gif")
+		share1 = Image.new("1", size, "white")
+		share1pix = share1.load()
+		for i in range(len(self.key)):
+			for j in range(255):
+				x = randint(0,1)
+				if x == 0:
+					share1pix[j, i] = 0
+		share2 = Image.new("1", size)
+		share2pix = share2.load()
+		for i in range(len(self.key)):
+			for j in range(255):
+				if pix[j, i] == share1pix[j, i]:
+					share2pix[j, i] = 0
+				else:
+					share2pix[j, i] = 255
+		output = [share1, share2, cipher]
+		x = Decrypter(cipher, [share1, share2])
+		x.decrypt_image()
+		return output
+
